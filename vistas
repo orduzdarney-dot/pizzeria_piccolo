@@ -1,0 +1,28 @@
+create view vw_resumen_cliente as
+select c.id,c.nombre, count(p.id) as total_pedidos, case 
+ when sum(p.total) is null then 0 
+ else sum(p.total) 
+end as total_gastado
+from cliente c
+left join pedido p 
+    on c.id = p.id_cliente
+group by c.id, c.nombre;
+
+
+
+create view vw_desempeno_repartidor as
+select r.id, r.nombre,r.zona,count(d.id) as entregas, avg(timediff( d.hora_entrega,d.hora_salida)
+) as tiempo_promedio_entrega
+from repartidor r
+left join domicilio d 
+    on r.id = d.id_repartidor 
+    and d.hora_entrega is not null
+group by r.id, r.nombre, r.zona;
+
+
+
+
+create view vw_stock_bajo as
+select id,nombre,stock,stock_min
+from ingrediente
+where stock < stock_min;

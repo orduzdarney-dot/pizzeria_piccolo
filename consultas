@@ -1,0 +1,56 @@
+select distinct c.id,c.nombre,c.email
+from cliente c
+join pedido p on c.id = p.id_cliente
+where p.fecha between '2026-08-01 00:00:00' and '2026-08-31 23:59:59';
+
+
+
+select p.id,p.nombre,count(pp.id_pedido) as veces_pedida
+from pizza p
+join pedido_pizza pp on p.id = pp.id_pizza
+group by p.id, p.nombre
+order by veces_pedida desc;
+
+
+
+
+select  r.nombre as repartidor, d.id_pedido, p.fecha,p.estado
+from repartidor r
+join domicilio d 
+on r.id = d.id_repartidor
+join pedido p on d.id_pedido = p.id;
+
+
+
+
+select r.zona,avg(timediff(d.hora_entrega,d.hora_salida)
+) as tiempo_promedio
+from repartidor r
+join domicilio d 
+    on r.id = d.id_repartidor
+where d.hora_entrega is not null
+group by r.zona;
+
+
+
+
+select  c.id,c.nombre,sum(p.total) as total_gastado
+from cliente c
+join pedido p on c.id = p.id_cliente
+group by c.id, c.nombre
+having sum(p.total) > 30000.00;
+
+
+
+
+select id,nombre,tamano,precio_base,tipo 
+from pizza where nombre like '%hawaiana%';
+
+
+
+
+select id,nombre, email from cliente where id in (select id_cliente from pedido
+where month(fecha) = month(current_date())
+and year(fecha) = year(current_date())
+group by id_cliente
+having count(id) > 5);

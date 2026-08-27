@@ -1,0 +1,84 @@
+delimiter //
+
+create function fn_total_pedido(p_id_pedido int) 
+returns decimal(10,2)
+deterministic
+begin
+declare v_subtotal decimal(10,2);
+declare v_envio decimal(10,2);
+declare v_total decimal(10,2);
+  
+ select sum(cantidad * precio) into v_subtotal 
+ from pedido_pizza 
+  where id_pedido = p_id_pedido;
+  
+select costo_envio into v_envio 
+from domicilio 
+ where id_pedido = p_id_pedido;
+  
+set v_subtotal = case when v_subtotal is null then 0 else v_subtotal end;
+set v_envio = case when v_envio is null then 0 else v_envio end;
+  
+  set v_total = (v_subtotal + v_envio) * 1.19;
+  
+  return v_total;
+end //
+
+delimiter ;
+
+
+-- Función: Calcular ganancia neta diaria
+delimiter //
+
+create function fn_ganancia_diaria(p_fecha date) 
+returns decimal(10,2)
+deterministic
+begin
+declare v_ventas decimal(10,2);
+declare v_costos decimal(10,2);
+  
+select sum(total) into v_ventas
+ from pedido
+where date(fecha) = p_fecha 
+    and estado = 'entregado';
+  
+select sum(pp.cantidad * pi.cantidad * i.costo) into v_costos
+  from pedido p
+  join pedido_pizza pp 
+    on p.id = pp.id_pedido
+  join pizza_ingrediente pi 
+    on pp.id_pizza = pi.id_pizza
+  join ingrediente i 
+    on pi.id_ingrediente = i.id
+  where date(p.fecha) = p_fecha 
+    and p.estado = 'entregado';
+  
+  set v_ventas = case when v_ventas is null then 0 else v_ventas end;
+  set v_costos = case when v_costos is null then 0 else v_costos end;
+  
+  return v_ventas - v_costos;
+end //
+
+delimiter ;
+
+
+-- Procedimiento: Marcar pedido como entregado
+delimiter //
+
+create procedure sp_entregar_pedido(in p_id_domicilio int)
+begin
+
+  update domicilio 
+  set hora_entrega = now() 
+  where id = p_id_domicilio;
+  
+  update pedido p
+  join domicilio d 
+    on p.id = d.id_pedido
+  set p.estado = 'entregado'
+  where d.id = p_id_domicilio;
+
+end //
+
+delimiter ;
+

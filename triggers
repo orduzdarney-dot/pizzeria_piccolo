@@ -1,0 +1,70 @@
+delimiter //
+
+create trigger trg_descontar_stock
+after insert on pedido_pizza
+for each row
+begin
+
+  update ingrediente i
+  join pizza_ingrediente pi 
+    on i.id = pi.id_ingrediente
+  set i.stock = i.stock - (pi.cantidad * new.cantidad)
+  where pi.id_pizza = new.id_pizza;
+
+end //
+
+delimiter ;
+
+
+
+delimiter //
+
+create trigger trg_historial_precio
+after update on pizza
+for each row
+begin
+
+  if old.precio_base <> new.precio_base then
+
+    insert into historial_precios(
+      id_pizza,
+      precio_anterior,
+      precio_nuevo,
+      fecha
+    )
+    values (
+      new.id,
+      old.precio_base,
+      new.precio_base,
+      now()
+    );
+
+  end if;
+
+end //
+
+delimiter ;
+
+
+
+
+delimiter //
+
+create trigger trg_repartidor_disponible
+after update on domicilio
+for each row
+begin
+
+if old.hora_entrega is null 
+ and new.hora_entrega is not null then
+
+  update repartidor 
+    set disponibilidad = 1 
+    where id = new.id_repartidor;
+
+  end if;
+
+end //
+
+delimiter ;
+
