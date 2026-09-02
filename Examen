@@ -1,16 +1,20 @@
 use pizzeria_piccolo;
 
-create table if not exists repartidores (id_repartidor int auto_increment primary key,nombre varchar(100) not null,telefono varchar(20),zona_asignada varchar(50),estado enum('activo', 'inactivo') default 'activo');
+alter table repartidor drop column disponibilidad;
+alter table repartidor add column telefono varchar(20);
+alter table repartidor add column estado enum('activo','inactivo') default 'activo';
 
-create table if not exists domicilios (  id_domicilio int auto_increment primary key,  id_pedido int not null,  id_repartidor int not null,   hora_salida datetime not null,  hora_entrega datetime null,estado enum('en_ruta', 'entregado', 'cancelado') default 'en_ruta',foreign key (id_pedido) references pedido(id),foreign key (id_repartidor) references repartidores(id_repartidor));
+alter table domicilio add column estado enum('en_ruta','entregado','cancelado') default 'en_ruta';
 
-select  r.nombre as repartidor,  count(d.id_domicilio) as cantidad_entregas,coalesce(sum(p.total), 0) as total_acumuladofrom repartidores r
-inner join domicilios d on r.id_repartidor = d.id_repartidor
-inner join pedido p on d.id_pedido = p.id
-where d.estado = 'entregado'
-group by r.id_repartidor, r.nombre;
+update domicilio set estado = 'entregado' where hora_entrega is not null;
 
-select r.id_repartidor, r.nombre, r.telefono,r.zona_asignada r.estado
-from repartidores r
-left join domicilios d on r.id_repartidor = d.id_repartidor
-where r.estado = 'activo' and d.id_domicilio is null;
+select r.nombre as repartidor, count(d.id) as cantidad_entregas, coalesce(sum(p.total),0) as total_acumulado
+from repartidor r
+left join domicilio d on r.id = d.id_repartidor and d.estado = 'entregado'
+left join pedido p on d.id_pedido = p.id
+group by r.id, r.nombre;
+
+select r.id, r.nombre, r.telefono, r.zona, r.estado
+from repartidor r
+left join domicilio d on r.id = d.id_repartidor
+where r.estado = 'activo' and d.id is null;
